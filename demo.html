@@ -306,8 +306,13 @@
         </div>
     </div>
 
+    <!-- Load configuration from backend -->
     <script>
-        const API_BASE = 'http://localhost:5000/api/v1';
+  
+        const API_BASE = window.location.hostname === 'localhost'
+            ? 'http://localhost:5000/api/v1'
+            : 'https://order-packing-production.up.railway.app/api/v1';
+        console.log('API Base URL:', API_BASE);
 
         function showStatus(message, type = 'success') {
             const status = document.getElementById('status');
