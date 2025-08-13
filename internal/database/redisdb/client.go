@@ -1,3 +1,4 @@
+// Package redisdb provides Redis database connectivity and operations
 package redisdb
 
 import (
@@ -9,14 +10,15 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func NewClient(cfg *config.RedisConfig) (*redis.Client, error) {
+// NewClient creates and returns a new Redis client with the given configuration
+func NewClient(ctx context.Context, cfg *config.RedisConfig) (*redis.Client, error) {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     cfg.Address,
 		Password: cfg.Password,
-		DB:       0,
+		DB:       cfg.DB,
 	})
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
 	if err := rdb.Ping(ctx).Err(); err != nil {

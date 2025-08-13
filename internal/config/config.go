@@ -1,3 +1,4 @@
+// Package config provides configuration management for the application
 package config
 
 import (
@@ -8,34 +9,37 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// Config represents the main application configuration
 type Config struct {
-	HTTP  *HttpConfig
+	HTTP  *HTTPConfig
 	Redis *RedisConfig
 }
 
-type HttpConfig struct {
+// HTTPConfig represents HTTP server configuration
+type HTTPConfig struct {
 	Host string
 	Port string
 }
 
+// RedisConfig represents Redis connection configuration
 type RedisConfig struct {
 	Address  string
 	Password string
+	DB       int
 }
 
+// Load loads configuration from environment variables
 func Load() (*Config, error) {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	_ = godotenv.Load()
+
 	return &Config{
-		HTTP:  loadHttpConfig(),
+		HTTP:  loadHTTPConfig(),
 		Redis: loadRedisConfig(),
 	}, nil
 }
 
-func loadHttpConfig() *HttpConfig {
-	return &HttpConfig{
+func loadHTTPConfig() *HTTPConfig {
+	return &HTTPConfig{
 		Host: getEnv("HTTP_HOST"),
 		Port: getEnv("HTTP_PORT"),
 	}
@@ -45,6 +49,7 @@ func loadRedisConfig() *RedisConfig {
 	return &RedisConfig{
 		Address:  getEnv("REDIS_ADDRESS"),
 		Password: getEnv("REDIS_PASSWORD"),
+		DB:       getEnvAsInt("REDIS_DB"),
 	}
 }
 
@@ -53,6 +58,7 @@ func getEnv(key string) string {
 	if val == "" {
 		log.Fatalf("Missing env var: %s", key)
 	}
+
 	return val
 }
 

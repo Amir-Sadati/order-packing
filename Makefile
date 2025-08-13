@@ -1,4 +1,17 @@
-.PHONY: swagger
+.PHONY: swagger test test-race cover cover-html
 
-swag:
-	swag init -g ./internal/router/router.go -d . --output ./docs
+swagger:
+	swag init -g ./internal/router/router.go -d . -o ./docs -ot json,yaml
+
+test:
+	go test ./...
+
+test-race:
+	go test ./... -race
+
+cover:
+	go test ./... -race -covermode=atomic -coverprofile=coverage.out
+	go tool cover -func=coverage.out
+
+cover-html: test
+	go tool cover -html=coverage.out -o coverage.html

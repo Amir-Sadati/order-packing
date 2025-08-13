@@ -89,4 +89,4 @@ Comprehensive test coverage including:
 docker-compose up -d
 ```
 
-Access at https://oreder-packing-production.up.railway.app/
+Access at https://order-packing-production.up.railway.app/

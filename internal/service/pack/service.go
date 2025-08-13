@@ -10,20 +10,25 @@ import (
 )
 
 var (
+	// ErrInvalidOrderItemQuantity is returned when the order item quantity is invalid
 	ErrInvalidOrderItemQuantity = errors.New("invalid order-item-quantity")
-	ErrNotFoundPackSize         = errors.New("pack size not found")
+	// ErrNotFoundPackSize is returned when a pack size is not found
+	ErrNotFoundPackSize = errors.New("pack size not found")
 )
 
+// Service provides pack-related business logic operations
 type Service struct {
 	rdb *redis.Client
 }
 
+// NewService creates and returns a new Service instance
 func NewService(redisClinet *redis.Client) *Service {
 	return &Service{
 		rdb: redisClinet,
 	}
 }
 
+// CalculatePack calculates the optimal pack combination for a given order quantity
 func (s *Service) CalculatePack(context context.Context, req CalculatePackRequest) (CalculatePackResponse, error) {
 	if req.OrderItemQuantity < 1 {
 		return CalculatePackResponse{}, ErrInvalidOrderItemQuantity
@@ -48,9 +53,7 @@ func (s *Service) CalculatePack(context context.Context, req CalculatePackReques
 	}
 
 	resp := calculatePacks(req.OrderItemQuantity, packSizez)
-	return CalculatePackResponse{
-		Packs: resp.Packs,
-	}, nil
+	return CalculatePackResponse(resp), nil
 }
 
 // GetPackSizes returns all pack sizes in descending order (largest to smallest)

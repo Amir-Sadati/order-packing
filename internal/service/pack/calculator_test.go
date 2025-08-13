@@ -346,6 +346,7 @@ func TestCalculatePacksWithLargeNumbers(t *testing.T) {
 			// For large numbers, we should use mostly 5000 packs
 			if tt.orderItemQty >= 100000 {
 				expected5000Packs := tt.orderItemQty / 5000
+
 				actual5000Packs := result.Packs[5000]
 				if actual5000Packs < expected5000Packs {
 					t.Errorf("Expected at least %d packs of 5000, got %d", expected5000Packs, actual5000Packs)

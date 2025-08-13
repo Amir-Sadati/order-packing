@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	// Import docs for swagger generation
 	_ "github.com/Amir-Sadati/order-packing/docs"
 	"github.com/Amir-Sadati/order-packing/internal/handler/api"
 	"github.com/Amir-Sadati/order-packing/internal/handler/api/response"
@@ -34,6 +35,7 @@ import (
 // @externalDocs.description  OpenAPI
 // @externalDocs.url          https://swagger.io/resources/open-api/
 
+// New creates and returns a new gin.Engine with all routes configured
 func New(
 	packHandler *api.PackHandler,
 ) *gin.Engine {
@@ -54,20 +56,20 @@ func New(
 	})
 
 	v1 := r.Group("/api/v1")
-	//************** Pack Routes **************
+	// ************** Pack Routes **************
 	orderRoutes := v1.Group("/packs")
 	orderRoutes.GET("/calculate", packHandler.CalculatePack)
 	orderRoutes.GET("/sizes", packHandler.GetPackSizes)
 	orderRoutes.POST("/sizes", packHandler.AddPackSize)
 	orderRoutes.DELETE("/sizes", packHandler.RemovePackSize)
 
-	//************** swagger Route **************
+	// ************** swagger Route **************
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	return r
-
 }
 
+// globalRecover provides global panic recovery middleware
 func globalRecover() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
@@ -75,6 +77,7 @@ func globalRecover() gin.HandlerFunc {
 				response.WriteFailNoData(c.Writer, http.StatusInternalServerError, "Internal Server Error", "An unexpected error occurred")
 			}
 		}()
+
 		c.Next()
 	}
 }

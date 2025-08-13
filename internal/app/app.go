@@ -19,6 +19,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// App represents the main application structure
 type App struct {
 	config     *config.Config
 	r          *gin.Engine
@@ -26,54 +27,66 @@ type App struct {
 	rdb        *redis.Client
 }
 
+// New creates and returns a new App instance
 func New() *App {
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatal("error in loading config")
 	}
+
 	return &App{
 		config: cfg,
 	}
 }
 
+// Run starts the application and handles graceful shutdown
 func (a *App) Run() {
-	rdb, err := redisdb.NewClient(a.config.Redis)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
+	rdb, err := redisdb.NewClient(ctx, a.config.Redis)
 	if err != nil {
-		log.Fatalf("failed to connect to redis: %v", err)
+		// Use log.Printf instead of log.Fatalf to avoid exitAfterDefer issue
+		log.Printf("failed to connect to redis: %v", err)
+		return
 	}
+
 	a.rdb = rdb
 
-	err = a.seedDefaultPackSizes()
+	err = a.seedDefaultPackSizes(ctx)
 	if err != nil {
-		log.Fatalf("failed to seed to redis: %v", err)
+		// Use log.Printf instead of log.Fatalf to avoid exitAfterDefer issue
+		log.Printf("failed to seed to redis: %v", err)
+		return
 	}
 
 	packService := pack.NewService(rdb)
 	packHandler := api.NewPackHandler(packService)
 
 	r := router.New(packHandler)
-	a.r = r
-	go a.ServeHTTP()
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer stop()
+	a.r = r
+
+	go a.ServeHTTP()
 
 	<-ctx.Done()
 	log.Println("Shutting down gracefully...")
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
 	if err := a.httpServer.Shutdown(shutdownCtx); err != nil {
 		log.Printf("HTTP shutdown error: %v", err)
 	}
-
 }
 
+// ServeHTTP starts the HTTP server
 func (a *App) ServeHTTP() {
 	a.httpServer = &http.Server{
-		Addr:         net.JoinHostPort(a.config.HTTP.Host, a.config.HTTP.Port),
-		Handler:      a.r,
-		WriteTimeout: 10 * time.Second,
+		Addr:              net.JoinHostPort(a.config.HTTP.Host, a.config.HTTP.Port),
+		Handler:           a.r,
+		WriteTimeout:      10 * time.Second,
+		ReadHeaderTimeout: 5 * time.Second,
 	}
 
 	err := a.httpServer.ListenAndServe()
@@ -83,13 +96,15 @@ func (a *App) ServeHTTP() {
 }
 
 // seedDefaultPackSizes inserts default pack sizes into Redis if none exist.
-func (a *App) seedDefaultPackSizes() error {
+func (a *App) seedDefaultPackSizes(ctx context.Context) error {
 	defaultSizes := []int{250, 500, 1000, 2000, 5000}
-	count, err := a.rdb.ZCard(context.Background(), string(constants.RedisKeyPackSizes)).Result()
+
+	count, err := a.rdb.ZCard(ctx, string(constants.RedisKeyPackSizes)).Result()
 	if err != nil {
 		log.Printf("failed to check Redis: %v", err)
 		return err
 	}
+
 	if count == 0 {
 		var zData []redis.Z
 		for _, size := range defaultSizes {
@@ -98,12 +113,16 @@ func (a *App) seedDefaultPackSizes() error {
 				Member: size,
 			})
 		}
-		if err := a.rdb.ZAdd(context.Background(), string(constants.RedisKeyPackSizes), zData...).Err(); err != nil {
+
+		if err := a.rdb.ZAdd(ctx, string(constants.RedisKeyPackSizes), zData...).Err(); err != nil {
 			log.Printf("failed to seed pack sizes to Redis: %v", err)
 			return err
 		}
+
 		log.Println("Default pack sizes seeded into Redis.")
+
 		return nil
 	}
+
 	return nil
 }

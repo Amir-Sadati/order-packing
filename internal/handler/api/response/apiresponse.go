@@ -1,3 +1,4 @@
+// Package response provides HTTP response utilities and structures
 package response
 
 import (
@@ -5,7 +6,8 @@ import (
 	"net/http"
 )
 
-type ApiResponse[T any] struct {
+// APIResponse represents a generic API response with data
+type APIResponse[T any] struct {
 	StatusCode int    `json:"status_code"`
 	Success    bool   `json:"success"`
 	Message    string `json:"message,omitempty"`
@@ -13,15 +15,17 @@ type ApiResponse[T any] struct {
 	Error      string `json:"error,omitempty"`
 }
 
-type ApiResponseNoData struct {
+// APIResponseNoData represents an API response without data
+type APIResponseNoData struct {
 	StatusCode int    `json:"status_code"`
 	Success    bool   `json:"success"`
 	Message    string `json:"message,omitempty"`
 	Error      string `json:"error,omitempty"`
 }
 
-func Success[T any](data T, msg string) ApiResponse[T] {
-	return ApiResponse[T]{
+// Success creates a successful API response with data
+func Success[T any](data T, msg string) APIResponse[T] {
+	return APIResponse[T]{
 		StatusCode: http.StatusOK,
 		Success:    true,
 		Message:    msg,
@@ -29,8 +33,9 @@ func Success[T any](data T, msg string) ApiResponse[T] {
 	}
 }
 
-func Fail[T any](data T, statusCode int, err, msg string) ApiResponse[T] {
-	return ApiResponse[T]{
+// Fail creates a failed API response with data
+func Fail[T any](data T, statusCode int, err, msg string) APIResponse[T] {
+	return APIResponse[T]{
 		StatusCode: statusCode,
 		Success:    false,
 		Message:    msg,
@@ -39,17 +44,18 @@ func Fail[T any](data T, statusCode int, err, msg string) ApiResponse[T] {
 	}
 }
 
-// non-generic
-func SuccessNoData(msg string) ApiResponseNoData {
-	return ApiResponseNoData{
+// SuccessNoData creates a successful API response without data
+func SuccessNoData(msg string) APIResponseNoData {
+	return APIResponseNoData{
 		StatusCode: http.StatusOK,
 		Success:    true,
 		Message:    msg,
 	}
 }
 
-func FailNoData(status int, err, msg string) ApiResponseNoData {
-	return ApiResponseNoData{
+// FailNoData creates a failed API response without data
+func FailNoData(status int, err, msg string) APIResponseNoData {
+	return APIResponseNoData{
 		StatusCode: status,
 		Success:    false,
 		Error:      err,
@@ -65,27 +71,31 @@ func FailNoData(status int, err, msg string) ApiResponseNoData {
 // Write JSON Response
 // ----------------------------
 
+// WriteSuccessNoData writes a successful response without data to the HTTP response writer
 func WriteSuccessNoData(w http.ResponseWriter, msg string) {
 	res := SuccessNoData(msg)
-	writeJson(w, res.StatusCode, res)
+	writeJSON(w, res.StatusCode, res)
 }
 
+// WriteSuccess writes a successful response with data to the HTTP response writer
 func WriteSuccess[T any](w http.ResponseWriter, data T, msg string) {
 	res := Success(data, msg)
-	writeJson(w, res.StatusCode, res)
+	writeJSON(w, res.StatusCode, res)
 }
 
+// WriteFailNoData writes a failed response without data to the HTTP response writer
 func WriteFailNoData(w http.ResponseWriter, statusCode int, err string, msg string) {
 	res := FailNoData(statusCode, err, msg)
-	writeJson(w, res.StatusCode, res)
+	writeJSON(w, res.StatusCode, res)
 }
 
+// WriteFailWithData writes a failed response with data to the HTTP response writer
 func WriteFailWithData[T any](w http.ResponseWriter, data T, statusCode int, err string, msg string) {
 	res := Fail(data, statusCode, err, msg)
-	writeJson(w, res.StatusCode, res)
+	writeJSON(w, res.StatusCode, res)
 }
 
-func writeJson(w http.ResponseWriter, status int, data any, headers ...http.Header) {
+func writeJSON(w http.ResponseWriter, status int, data any, headers ...http.Header) {
 	out, err := json.Marshal(data)
 	if err != nil {
 		return

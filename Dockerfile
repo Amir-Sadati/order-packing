@@ -1,24 +1,27 @@
-# Use official Go 1.24 image
-FROM golang:1.24-alpine
+# ---- Build stage ----
+FROM golang:1.24-alpine AS builder
+WORKDIR /src
 
-# Install Git (in case some deps require it)
+# Optional (some deps need git)
 RUN apk add --no-cache git
 
-# Set working directory
-WORKDIR /app
-
-# Copy go.mod and go.sum first to cache deps
+# Cache deps
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy the entire project
+# Copy sources
 COPY . .
 
-# Build the app from cmd/
-RUN go build -o main ./cmd
+# Build static-ish binary (no DWARF, smaller)
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /out/app ./cmd
 
-# Expose port
+# ---- Runtime stage ----
+FROM alpine:3.20 AS runner
+# For HTTPS calls inside your app
+RUN apk add --no-cache ca-certificates
+
+WORKDIR /app
+COPY --from=builder /out/app /app/app
+
 EXPOSE 5000
-
-# Run the binary
-CMD ["./main"]
+CMD ["/app/app"]

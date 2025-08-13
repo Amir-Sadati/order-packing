@@ -2,10 +2,12 @@ package pack
 
 import "math"
 
+// OptimalPacking represents the optimal pack combination for a given order
 type OptimalPacking struct {
 	Packs map[int]int
 }
 
+// PackCombination represents a pack combination with metadata
 type PackCombination struct {
 	Packs     map[int]int
 	Total     int
@@ -23,6 +25,7 @@ func calculatePacks(orderItemQty int, packSizes []int) OptimalPacking {
 			packs[v] = 1
 			return OptimalPacking{Packs: packs}
 		}
+
 		setPacks[v] = struct{}{}
 	}
 
@@ -39,37 +42,38 @@ func calculatePacks(orderItemQty int, packSizes []int) OptimalPacking {
 	if orderItemQty < maxValue {
 		best := findBestPackCombination(orderItemQty, packSizes)
 		return OptimalPacking{Packs: best.Packs}
-	} else {
-		// Case 3: Order is larger than largest pack
-		// Use as many largest packs as possible, then handle remainder
-		count := orderItemQty / maxValue
-		reminder := orderItemQty % maxValue
-		packs[maxValue] = count
+	}
 
-		// no remainder
-		if reminder == 0 {
-			return OptimalPacking{Packs: packs}
-		}
+	// Case 3: Order is larger than largest pack
+	// Use as many largest packs as possible, then handle remainder
+	count := orderItemQty / maxValue
+	reminder := orderItemQty % maxValue
+	packs[maxValue] = count
 
-		// Remainder matches an existing pack size
-		if _, ok := setPacks[reminder]; ok {
-			packs[reminder] = 1
-			return OptimalPacking{Packs: packs}
-		}
-
-		// Remainder is smaller than smallest pack - use smallest pack
-		if reminder < minValue {
-			packs[minValue] = 1
-			return OptimalPacking{Packs: packs}
-		}
-
-		// Find optimal combination for remainder
-		best := findBestPackCombination(reminder, packSizes)
-		for k, v := range best.Packs {
-			packs[k] += v
-		}
+	// no remainder
+	if reminder == 0 {
 		return OptimalPacking{Packs: packs}
 	}
+
+	// Remainder matches an existing pack size
+	if _, ok := setPacks[reminder]; ok {
+		packs[reminder] = 1
+		return OptimalPacking{Packs: packs}
+	}
+
+	// Remainder is smaller than smallest pack - use smallest pack
+	if reminder < minValue {
+		packs[minValue] = 1
+		return OptimalPacking{Packs: packs}
+	}
+
+	// Find optimal combination for remainder
+	best := findBestPackCombination(reminder, packSizes)
+	for k, v := range best.Packs {
+		packs[k] += v
+	}
+
+	return OptimalPacking{Packs: packs}
 }
 
 // findBestPackCombination uses DFS algorithm to find the optimal pack combination
@@ -78,6 +82,7 @@ func findBestPackCombination(orderQty int, packSizes []int) PackCombination {
 	best := PackCombination{Total: math.MaxInt64}
 
 	var dfs func(index int, current map[int]int, total int, count int)
+
 	dfs = func(index int, current map[int]int, total int, count int) {
 		// Base case: we have enough items
 		if total >= orderQty {
@@ -87,12 +92,14 @@ func findBestPackCombination(orderQty int, packSizes []int) PackCombination {
 				for k, v := range current {
 					newMap[k] = v
 				}
+
 				best = PackCombination{Packs: newMap, Total: total, PackCount: count}
 			}
 			return
 		}
+
 		// Base case: no more pack sizes to try
-		if index >= int(len(packSizes)) {
+		if index >= len(packSizes) {
 			return
 		}
 
@@ -100,7 +107,7 @@ func findBestPackCombination(orderQty int, packSizes []int) PackCombination {
 		// Calculate maximum packs needed for this size (with buffer for optimization)
 		maxPackCount := (orderQty-total)/packSize + 2
 
-		for i := 0; i <= int(maxPackCount); i++ {
+		for i := 0; i <= maxPackCount; i++ {
 			if i > 0 {
 				current[packSize] = i
 			}

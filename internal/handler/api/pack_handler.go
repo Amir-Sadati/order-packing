@@ -9,10 +9,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// PackHandler handles HTTP requests related to pack operations
 type PackHandler struct {
 	packService *pack.Service
 }
 
+// NewPackHandler creates and returns a new PackHandler instance
 func NewPackHandler(packService *pack.Service) *PackHandler {
 	return &PackHandler{
 		packService: packService,
@@ -47,6 +49,7 @@ func (h *PackHandler) CalculatePack(c *gin.Context) {
 		} else {
 			response.WriteFailNoData(c.Writer, http.StatusInternalServerError, "internal_error", "Something went wrong")
 		}
+
 		return
 	}
 
@@ -68,6 +71,7 @@ func (h *PackHandler) GetPackSizes(c *gin.Context) {
 		response.WriteFailNoData(c.Writer, http.StatusInternalServerError, "internal_error", "Something went wrong")
 		return
 	}
+
 	response.WriteSuccess(c.Writer, result, "pack sizes fetched successfully")
 }
 
@@ -122,6 +126,7 @@ func (h *PackHandler) RemovePackSize(c *gin.Context) {
 			response.WriteFailNoData(c.Writer, http.StatusBadRequest, err.Error(), "")
 			return
 		}
+
 		response.WriteFailNoData(c.Writer, http.StatusInternalServerError, err.Error(), "")
 		return
 	}
